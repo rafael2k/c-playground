@@ -19,7 +19,7 @@
 #include <sys/mman.h>
 #include <malloc.h>
 
-#include "buffer.h"
+#include "ring_buffer1.h"
 #include "shm.h"
 
 // Private functions

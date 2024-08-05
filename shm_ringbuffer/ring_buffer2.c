@@ -10,7 +10,7 @@
 // this is needed for Linux extensions
 #define _DEFAULT_SOURCE
 
-#include "ring_buffer.h"
+#include "ring_buffer2.h"
 
 void ring_buffer_create (struct ring_buffer *buffer, unsigned long order)
 {
