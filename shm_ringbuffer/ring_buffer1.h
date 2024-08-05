@@ -9,6 +9,10 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdatomic.h>
+#include <stdint.h>
+#include <stddef.h>
+#include <sys/shm.h>
 
 struct circular_buf_t_aux {
     size_t head;

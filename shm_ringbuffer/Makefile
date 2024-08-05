@@ -5,7 +5,7 @@ LDFLAGS=
 
 .PHONY: all
 
-all: buffer.o ring_buffer1.o shm.o ring_buffer2.o test-ring_buffer2.o test-ring_buffer2
+all: buffer.o ring_buffer1.o shm.o ring_buffer2.o test-ring_buffer2.o test-ring_buffer2 test-ring_buffer1.o test-ring_buffer1
 
 ring_buffer1.o: ring_buffer1.c ring_buffer1.h
 	$(CC) $(CFLAGS) -c ring_buffer1.c -o ring_buffer1.o
@@ -13,19 +13,29 @@ ring_buffer1.o: ring_buffer1.c ring_buffer1.h
 ring_buffer2.o: ring_buffer2.c ring_buffer2.h
 	$(CC) $(CFLAGS) -Wno-pointer-arith -c ring_buffer2.c -o ring_buffer2.o
 
+# API
 buffer.o: buffer.c buffer.h
 	$(CC) $(CFLAGS) -c buffer.c -o buffer.o
 
+# shared memory helpers
 shm.o: shm.c shm.h
 	$(CC) $(CFLAGS) -c shm.c -o shm.o
 
-
+# tests...
 test-ring_buffer2.o: test-ring_buffer2.c
 	$(CC) $(CFLAGS) -c test-ring_buffer2.c -o test-ring_buffer2.o
 
 test-ring_buffer2: test-ring_buffer2.o ring_buffer2.o
 	$(CC) $(LDFLAGS) -o test-ring_buffer2 test-ring_buffer2.o ring_buffer2.o
 
+test-ring_buffer1.o: test-ring_buffer1.c
+	$(CC) $(CFLAGS) -c test-ring_buffer1.c -o test-ring_buffer1.o
+
+test-ring_buffer1: test-ring_buffer1.o ring_buffer1.o shm.o
+	$(CC) $(LDFLAGS) -o test-ring_buffer1 test-ring_buffer1.o ring_buffer1.o shm.o
+
+
+
 .PHONY: clean
 clean:
-	rm -f *.o test-ring_buffer2
+	rm -f *.o test-ring_buffer2 test-ring_buffer1

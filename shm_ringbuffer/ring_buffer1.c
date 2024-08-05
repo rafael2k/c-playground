@@ -28,7 +28,7 @@ static void advance_pointer_n(cbuf_handle_t cbuf, size_t len)
 {
     assert(cbuf);
 
-    fprintf(stderr, "head = %ld\n", cbuf->internal->head);
+    // fprintf(stderr, "head = %ld\n", cbuf->internal->head);
 
     if(cbuf->internal->full)
     {
@@ -103,7 +103,7 @@ cbuf_handle_t circular_buf_init_shm(size_t size, key_t key)
 
     if (shm_is_created(key, size))
     {
-        fprintf(stderr, "shm key %u already created. Re-creating.\n", key);
+        // fprintf(stderr, "shm key %u already created. Re-creating.\n", key);
         shm_destroy(key, size);
     }
     shm_create(key, size);
@@ -114,7 +114,7 @@ cbuf_handle_t circular_buf_init_shm(size_t size, key_t key)
     key++;
     if (shm_is_created(key, sizeof(struct circular_buf_t_aux)))
     {
-        fprintf(stderr, "shm key %u already created. Re-creating.\n", key);
+        // fprintf(stderr, "shm key %u already created. Re-creating.\n", key);
         shm_destroy(key, sizeof(struct circular_buf_t_aux));
     }
     shm_create(key, sizeof(struct circular_buf_t_aux));
@@ -203,7 +203,7 @@ size_t circular_buf_size(cbuf_handle_t cbuf)
 
     atomic_flag_clear(&cbuf->internal->acquire);
 
-    fprintf(stderr, "size = %ld\n", size);
+    // fprintf(stderr, "size = %ld\n", size);
     return size;
 }
 
