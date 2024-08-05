@@ -72,6 +72,30 @@ static void retreat_pointer(cbuf_handle_t cbuf)
     cbuf->internal->tail = (cbuf->internal->tail + 1) % cbuf->internal->max;
 }
 
+size_t circular_buf_size_internal(cbuf_handle_t cbuf)
+{
+    assert(cbuf && cbuf->internal);
+
+    size_t size = cbuf->internal->max;
+
+    if(!cbuf->internal->full)
+    {
+        if(cbuf->internal->head >= cbuf->internal->tail)
+        {
+            size = (cbuf->internal->head - cbuf->internal->tail);
+        }
+        else
+        {
+            size = (cbuf->internal->max + cbuf->internal->head - cbuf->internal->tail);
+        }
+
+    }
+
+    // fprintf(stderr, "size = %ld\n", size);
+    return size;
+}
+
+
 // User APIs
 
 cbuf_handle_t circular_buf_init(uint8_t* buffer, size_t size)
@@ -184,11 +208,13 @@ size_t circular_buf_size(cbuf_handle_t cbuf)
 {
     assert(cbuf && cbuf->internal);
 
-    size_t size = circular_buf_capacity(cbuf);
-
     while (atomic_flag_test_and_set(&cbuf->internal->acquire));
 
-    if(!cbuf->internal->full)
+    size_t size = cbuf->internal->max;
+
+    bool is_full = cbuf->internal->full;
+
+    if(!is_full)
     {
         if(cbuf->internal->head >= cbuf->internal->tail)
         {
@@ -211,9 +237,9 @@ size_t circular_buf_free_size(cbuf_handle_t cbuf)
 {
     assert(cbuf->internal);
 
-    size_t size = 0;
-
     while (atomic_flag_test_and_set(&cbuf->internal->acquire));
+
+    size_t size = 0;
 
     if(!cbuf->internal->full)
     {
@@ -252,16 +278,19 @@ int circular_buf_put(cbuf_handle_t cbuf, uint8_t data)
 
     int r = -1;
 
-    if(!circular_buf_full(cbuf))
-    {
-        while (atomic_flag_test_and_set(&cbuf->internal->acquire));
+    while (atomic_flag_test_and_set(&cbuf->internal->acquire));
 
+    bool is_full = cbuf->internal->full;
+
+    if(!is_full)
+    {
         cbuf->buffer[cbuf->internal->head] = data;
         advance_pointer(cbuf);
 
-        atomic_flag_clear(&cbuf->internal->acquire);
         r = 0;
     }
+
+    atomic_flag_clear(&cbuf->internal->acquire);
 
     return r;
 }
@@ -270,18 +299,21 @@ int circular_buf_get(cbuf_handle_t cbuf, uint8_t * data)
 {
     assert(cbuf && data && cbuf->internal && cbuf->buffer);
 
+    while (atomic_flag_test_and_set(&cbuf->internal->acquire));
+
     int r = -1;
 
-    if(!circular_buf_empty(cbuf))
-    {
-        while (atomic_flag_test_and_set(&cbuf->internal->acquire));
+    bool is_empty = !cbuf->internal->full && (cbuf->internal->head == cbuf->internal->tail);
 
+    if(!is_empty)
+    {
         *data = cbuf->buffer[cbuf->internal->tail];
         retreat_pointer(cbuf);
 
-        atomic_flag_clear(&cbuf->internal->acquire);
         r = 0;
     }
+
+    atomic_flag_clear(&cbuf->internal->acquire);
 
     return r;
 }
@@ -317,13 +349,13 @@ int circular_buf_get_range(cbuf_handle_t cbuf, uint8_t *data, size_t len)
 {
     assert(cbuf && data && cbuf->internal && cbuf->buffer);
 
+    while (atomic_flag_test_and_set(&cbuf->internal->acquire));
+
     int r = -1;
-    size_t size = circular_buf_capacity(cbuf);
+    size_t size = cbuf->internal->max;
 
-    if(circular_buf_size(cbuf) >= len)
+    if(circular_buf_size_internal(cbuf) >= len)
     {
-        while (atomic_flag_test_and_set(&cbuf->internal->acquire));
-
         if ( ((cbuf->internal->tail + len) % size) > cbuf->internal->tail)
         {
             memcpy(data, cbuf->buffer + cbuf->internal->tail, len);
@@ -336,10 +368,10 @@ int circular_buf_get_range(cbuf_handle_t cbuf, uint8_t *data, size_t len)
 
         retreat_pointer_n(cbuf, len);
 
-        atomic_flag_clear(&cbuf->internal->acquire);
-
         r = 0;
     }
+
+    atomic_flag_clear(&cbuf->internal->acquire);
 
     return r;
 }
@@ -348,13 +380,13 @@ int circular_buf_put_range(cbuf_handle_t cbuf, uint8_t * data, size_t len)
 {
     assert(cbuf && cbuf->internal && cbuf->buffer);
 
+    while (atomic_flag_test_and_set(&cbuf->internal->acquire));
+
     int r = -1;
-    size_t size = circular_buf_capacity(cbuf);
+    size_t size = cbuf->internal->max;
 
-    if(!circular_buf_full(cbuf))
+    if(!cbuf->internal->full)
     {
-        while (atomic_flag_test_and_set(&cbuf->internal->acquire));
-
         if ( ((cbuf->internal->head + len) % size) > cbuf->internal->head)
         {
             memcpy(cbuf->buffer + cbuf->internal->head, data, len);
@@ -367,10 +399,10 @@ int circular_buf_put_range(cbuf_handle_t cbuf, uint8_t * data, size_t len)
 
         advance_pointer_n(cbuf, len);
 
-        atomic_flag_clear(&cbuf->internal->acquire);
-
         r = 0;
     }
+
+    atomic_flag_clear(&cbuf->internal->acquire);
 
     return r;
 }
