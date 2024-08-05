@@ -18,7 +18,6 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <malloc.h>
-// #include <threads.h>
 
 #include "buffer.h"
 #include "shm.h"
