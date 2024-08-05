@@ -50,7 +50,6 @@ void ring_buffer_create_named (struct ring_buffer *buffer, char *name, int order
     {
         strcpy(buffer->name, "/ring-buffer-XXXXXX");
         mktemp2(buffer->name);
-        printf("%s\n", buffer->name);
     }
     else
     {
