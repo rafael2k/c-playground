@@ -72,6 +72,6 @@ void initialize_buffer(buffer *buf, int mag) // size is 2^mag
 void clear_buffer (buffer *buffer)
 {
     pthread_mutex_lock( &buffer->mutex );
-    ring_buffer_clear(&buffer->buf);
+    ring_buffer_clear( &buffer->buf );
     pthread_mutex_unlock( &buffer->mutex );
 }

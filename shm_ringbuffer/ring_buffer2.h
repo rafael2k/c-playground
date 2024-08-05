@@ -15,6 +15,7 @@ extern "C" {
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -29,24 +30,24 @@ extern "C" {
 
 struct ring_buffer
 {
-  void *address;
+    void *address;
 
-  unsigned long count_bytes;
-  unsigned long write_offset_bytes;
-  unsigned long read_offset_bytes;
-
-  pthread_mutex_t    mutex;
-  pthread_cond_t     cond;
+    uint64_t  count_bytes;
+    uint64_t write_offset_bytes;
+    uint64_t read_offset_bytes;
+    char name[32]; // shared memory object name
 };
 
-void ring_buffer_create (struct ring_buffer *buffer, unsigned long order);
+
+void ring_buffer_create_named (struct ring_buffer *buffer, char *name, int order); // name should start with /
+void ring_buffer_create (struct ring_buffer *buffer, int order); // kept for compatibility purposes
 void ring_buffer_free (struct ring_buffer *buffer);
 void *ring_buffer_write_address (struct ring_buffer *buffer);
-void ring_buffer_write_advance (struct ring_buffer *buffer, unsigned long count_bytes);
+void ring_buffer_write_advance (struct ring_buffer *buffer, uint64_t count_bytes);
 void *ring_buffer_read_address (struct ring_buffer *buffer);
-void ring_buffer_read_advance (struct ring_buffer *buffer, unsigned long count_bytes);
-unsigned long ring_buffer_count_bytes (struct ring_buffer *buffer);
-unsigned long ring_buffer_count_free_bytes (struct ring_buffer *buffer);
+void ring_buffer_read_advance (struct ring_buffer *buffer, uint64_t count_bytes);
+uint64_t ring_buffer_count_bytes (struct ring_buffer *buffer);
+uint64_t ring_buffer_count_free_bytes (struct ring_buffer *buffer);
 void ring_buffer_clear (struct ring_buffer *buffer);
 
 #ifdef __cplusplus
