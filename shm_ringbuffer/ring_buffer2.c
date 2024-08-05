@@ -1,4 +1,4 @@
-/* Ring buffer
+/* Ring buffer 2
  *
  * Copyright (C) 2015-2024 Rhizomatica
  * Author: Rafael Diniz <rafael@riseup.net>
