@@ -25,7 +25,7 @@ int shm_open_and_get_fd(char *name)
 {
     int fd = -1;
 
-    printf("shm_open_and_get_fd() called with %s\n", name);
+    fprintf(stderr, "shm_open_and_get_fd() called with %s\n", name);
 
     if (strlen(name) >= MAX_POSIX_SHM_NAME)
     {
@@ -44,15 +44,15 @@ int shm_create_and_get_fd(char *name, size_t size)
 {
     int fd = -1;
 
-    printf("shm_create_and_get_fd() called with %s and %ld\n", name, size);
+    fprintf(stderr, "shm_create_and_get_fd() called with %s and %ld\n", name, size);
 
     if (shm_open(name, O_RDWR, 0644) >= 0)
     {
-        printf("POSIX shared memory already created\nRe-creating it.");
+        fprintf(stderr, "POSIX shared memory already created\nRe-creating it.\n");
         shm_unlink(name);
     }
 
-    if((fd = shm_open(name, O_RDWR | O_CREAT, 0644)) < 0)
+    if((fd = shm_open(name, O_RDWR | O_CREAT, 0644)) == -1)
     {
         fprintf(stderr, "ERROR: This should never happen! SHM creation error!\n");
         abort();
@@ -67,11 +67,6 @@ int shm_create_and_get_fd(char *name, size_t size)
     return fd;
 }
 
-// returns 0 on success, -1 on error
-int shm_close(char *name)
-{
-    return shm_unlink(name);
-}
 
 // returns the pointer to the region, or (void *) -1 in case of error
 void *shm_map(int fd, size_t size)

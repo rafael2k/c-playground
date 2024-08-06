@@ -28,7 +28,6 @@ struct circular_buf_t_aux {
 struct circular_buf_t {
     struct circular_buf_t_aux *internal;
     uint8_t *buffer;
-    int fd1, fd2;
 };
 
 /// Opaque circular buffer structure
@@ -37,12 +36,18 @@ struct circular_buf_t {
 /// Handle type, the way users interact with the API
 typedef struct circular_buf_t* cbuf_handle_t;
 
-
+// Shared memory init/free functions. 2 shared memory objects are created: base_name-1 and basename-2.
 cbuf_handle_t circular_buf_init_shm(size_t size, char *base_name);
 
 cbuf_handle_t circular_buf_connect_shm(size_t size, char *base_name);
 
 void circular_buf_free_shm(cbuf_handle_t cbuf, size_t size, char *base_name);
+
+// returns 0 on success, -1 on error (locking version)
+int read_buffer(cbuf_handle_t cbuf, uint8_t *data, size_t len);
+
+// returns 0 on success, -1 on error (locking version)
+int write_buffer(cbuf_handle_t cbuf, uint8_t * data, size_t len);
 
 /// Check the number of elements stored in the buffer
 /// Requires: cbuf is valid and created by circular_buf_init
@@ -85,9 +90,6 @@ size_t circular_buf_free_size(cbuf_handle_t cbuf);
 /// Returns the current number of free elements in the buffer
 size_t circular_buf_free_size(cbuf_handle_t cbuf);
 
-int read_buffer(cbuf_handle_t cbuf, uint8_t *data, size_t len);
-
-int write_buffer(cbuf_handle_t cbuf, uint8_t * data, size_t len);
 
 
 // This are the init/free variants without using shared memory for IPC

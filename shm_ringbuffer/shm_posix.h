@@ -23,9 +23,6 @@ int shm_open_and_get_fd(char *name);
 // returns non-negative integer
 int shm_create_and_get_fd(char *name, size_t size);
 
-// returns 0 on success, -1 on error
-int shm_close(char *name);
-
 // returns the pointer to the region, or (void *) -1 in case of error
 void *shm_map(int fd, size_t size);
 

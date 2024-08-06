@@ -23,6 +23,8 @@
 #include <sys/mman.h>
 #include <malloc.h>
 #include <pthread.h>
+#include <unistd.h>
+
 // Private functions
 
 static void advance_pointer_n(cbuf_handle_t cbuf, size_t len)
@@ -96,6 +98,28 @@ size_t circular_buf_size_internal(cbuf_handle_t cbuf)
     return size;
 }
 
+size_t circular_buf_free_size_internal(cbuf_handle_t cbuf)
+{
+    assert(cbuf->internal);
+
+    size_t size = 0;
+
+    if(!cbuf->internal->full)
+    {
+        if(cbuf->internal->head >= cbuf->internal->tail)
+        {
+            size = cbuf->internal->max - (cbuf->internal->head - cbuf->internal->tail);
+        }
+        else
+        {
+            size = (cbuf->internal->tail - cbuf->internal->head);
+        }
+
+    }
+
+    return size;
+}
+
 
 // !! Public User APIs !! //
 
@@ -104,22 +128,25 @@ cbuf_handle_t circular_buf_init_shm(size_t size, char *base_name)
 {
     assert(size);
     char tmp[MAX_POSIX_SHM_NAME];
+    int fd1, fd2;
 
     cbuf_handle_t cbuf = memalign(SHMLBA, sizeof(struct circular_buf_t));
     assert(cbuf);
 
     strcpy(tmp, base_name);
     strcat(tmp, "-1");
-    cbuf->fd1 = shm_create_and_get_fd(tmp, size);
-    cbuf->buffer = shm_map(cbuf->fd1, size);
+    fd1 = shm_create_and_get_fd(tmp, size);
+    cbuf->buffer = shm_map(fd1, size);
+    close(fd1);
 
     assert(cbuf->buffer);
 
 
     strcpy(tmp, base_name);
     strcat(tmp, "-2");
-    cbuf->fd2 = shm_create_and_get_fd(tmp, sizeof(struct circular_buf_t_aux));
-    cbuf->internal = shm_map(cbuf->fd2, sizeof(struct circular_buf_t_aux));
+    fd2 = shm_create_and_get_fd(tmp, sizeof(struct circular_buf_t_aux));
+    cbuf->internal = shm_map(fd2, sizeof(struct circular_buf_t_aux));
+    close(fd2);
 
     assert(cbuf->internal);
 
@@ -145,22 +172,29 @@ cbuf_handle_t circular_buf_connect_shm(size_t size, char *base_name)
 {
     assert(size);
     char tmp[MAX_POSIX_SHM_NAME];
+    int fd1, fd2;
 
     cbuf_handle_t cbuf = memalign(SHMLBA, sizeof(struct circular_buf_t));
     assert(cbuf);
 
     strcpy(tmp, base_name);
     strcat(tmp, "-1");
-    cbuf->fd1 = shm_open_and_get_fd(tmp);
-    cbuf->buffer = shm_map(cbuf->fd1, size);
+    fd1 = shm_open_and_get_fd(tmp);
+    if (fd1 < 0)
+        return NULL;
+    cbuf->buffer = shm_map(fd1, size);
+    close(fd1);
 
     assert(cbuf->buffer);
 
 
     strcpy(tmp, base_name);
     strcat(tmp, "-2");
-    cbuf->fd2 = shm_open_and_get_fd(tmp);
-    cbuf->internal = shm_map(cbuf->fd2, sizeof(struct circular_buf_t_aux));
+    fd2 = shm_open_and_get_fd(tmp);
+    if (fd2 < 0)
+        return NULL;
+    cbuf->internal = shm_map(fd2, sizeof(struct circular_buf_t_aux));
+    close(fd2);
 
     assert(cbuf->internal);
 
@@ -179,11 +213,11 @@ void circular_buf_free_shm(cbuf_handle_t cbuf, size_t size, char *base_name)
 
     strcpy(tmp, base_name);
     strcat(tmp, "-1");
-    shm_close(tmp);
+    shm_unlink(tmp);
 
     strcpy(tmp, base_name);
     strcat(tmp, "-2");
-    shm_close(tmp);
+    shm_unlink(tmp);
 
     free(cbuf);
 }
@@ -402,7 +436,7 @@ try_again_write:
 
     size_t size = cbuf->internal->max;
 
-    if(!cbuf->internal->full)
+    if(circular_buf_free_size_internal(cbuf) >= len)
     {
         if ( ((cbuf->internal->head + len) % size) > cbuf->internal->head)
         {

@@ -5,7 +5,7 @@ LDFLAGS=
 
 .PHONY: all
 
-all: buffer2.o ring_buffer1.o ring_buffer2.o ring_buffer_posix.o shm_sysv.o shm_posix.o test-ring_buffer2.o test-ring_buffer2 test-ring_buffer1.o test-ring_buffer1
+all: buffer2.o ring_buffer1.o ring_buffer2.o ring_buffer_posix.o shm_sysv.o shm_posix.o test-ring_buffer2.o test-ring_buffer2 test-ring_buffer1.o test-ring_buffer1 test-rb_posix_master.o test-rb_posix_master test-rb_posix_slave.o test-rb_posix_slave
 
 ring_buffer1.o: ring_buffer1.c ring_buffer1.h
 	$(CC) $(CFLAGS) -c ring_buffer1.c -o ring_buffer1.o
@@ -40,7 +40,19 @@ test-ring_buffer1.o: test-ring_buffer1.c
 test-ring_buffer1: test-ring_buffer1.o ring_buffer1.o shm_sysv.o
 	$(CC) $(LDFLAGS) -o test-ring_buffer1 test-ring_buffer1.o ring_buffer1.o shm_sysv.o
 
+test-rb_posix_master.o: test-rb_posix_master.c
+	$(CC) $(CFLAGS) -c test-rb_posix_master.c -o test-rb_posix_master.o
+
+test-rb_posix_master: test-rb_posix_master.o ring_buffer_posix.o shm_posix.o
+	$(CC) $(LDFLAGS) -o test-rb_posix_master test-rb_posix_master.o ring_buffer_posix.o shm_posix.o
+
+test-rb_posix_slave.o: test-rb_posix_slave.c
+	$(CC) $(CFLAGS) -c test-rb_posix_slave.c -o test-rb_posix_slave.o
+
+test-rb_posix_slave: test-rb_posix_slave.o ring_buffer_posix.o shm_posix.o
+	$(CC) $(LDFLAGS) -o test-rb_posix_slave test-rb_posix_slave.o ring_buffer_posix.o shm_posix.o
+
 
 .PHONY: clean
 clean:
-	rm -f *.o test-ring_buffer2 test-ring_buffer1
+	rm -f *.o test-ring_buffer2 test-ring_buffer1 test-rb_posix_master test-rb_posix_slave
