@@ -20,7 +20,7 @@
 #include <malloc.h>
 
 #include "ring_buffer1.h"
-#include "shm.h"
+#include "shm_sysv.h"
 
 // Private functions
 

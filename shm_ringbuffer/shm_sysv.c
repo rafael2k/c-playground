@@ -7,7 +7,7 @@
  *
  */
 
-#include "shm.h"
+#include "shm_sysv.h"
 
 #include <stdio.h>
 

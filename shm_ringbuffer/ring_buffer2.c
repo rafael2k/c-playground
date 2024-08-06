@@ -12,7 +12,7 @@
 
 #include "ring_buffer2.h"
 
-// lets use our own mktemp... otherwise ld emits a warning... should be better than BSD 4.3.
+// lets use our own mktemp... otherwise ld emits a warning... it should be better than BSD 4.3.
 char *mktemp2(char *s)
 {
     char *ptr;

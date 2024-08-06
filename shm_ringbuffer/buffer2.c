@@ -7,7 +7,7 @@
  *
  */
 
-#include "buffer.h"
+#include "buffer2.h"
 
 inline unsigned long size_buffer(buffer *buffer)
 {
@@ -19,9 +19,9 @@ inline void read_buffer(buffer *buf_in, uint8_t *buffer_out, int size)
     void *addr;
 
 try_again_read:
+    pthread_mutex_lock( &buf_in->mutex );
     if ( ring_buffer_count_bytes( &buf_in->buf ) >= size )
     {
-        pthread_mutex_lock( &buf_in->mutex );
         addr = ring_buffer_read_address( &buf_in->buf );
         memcpy( buffer_out, addr, size );
         ring_buffer_read_advance( &buf_in->buf, size );
@@ -30,7 +30,6 @@ try_again_read:
     }
     else
     {
-        pthread_mutex_lock( &buf_in->mutex );
         pthread_cond_wait( &buf_in->cond, &buf_in->mutex );
         pthread_mutex_unlock( &buf_in->mutex );
         goto try_again_read;
@@ -44,9 +43,9 @@ inline void write_buffer(buffer *buf_out, uint8_t *buffer_in, int size)
     void *addr;
 
 try_again_write:
+    pthread_mutex_lock( &buf_out->mutex );
     if ( ring_buffer_count_free_bytes ( &buf_out->buf ) >= size)
     {
-        pthread_mutex_lock( &buf_out->mutex );
         addr = ring_buffer_write_address( &buf_out->buf );
         memcpy( addr, buffer_in, size );
         ring_buffer_write_advance ( &buf_out->buf, size );
@@ -55,7 +54,6 @@ try_again_write:
     }
     else
     {
-        pthread_mutex_lock( &buf_out->mutex );
         pthread_cond_wait( &buf_out->cond, &buf_out->mutex );
         pthread_mutex_unlock( &buf_out->mutex );
         goto try_again_write;
