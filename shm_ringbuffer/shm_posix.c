@@ -25,6 +25,8 @@ int shm_open_and_get_fd(char *name)
 {
     int fd = -1;
 
+    printf("shm_open_and_get_fd() called with %s\n", name);
+
     if (strlen(name) >= MAX_POSIX_SHM_NAME)
     {
         fprintf(stderr, "ERROR: This should never happen! Name length bigger than allowed!\n");
@@ -41,6 +43,8 @@ int shm_open_and_get_fd(char *name)
 int shm_create_and_get_fd(char *name, size_t size)
 {
     int fd = -1;
+
+    printf("shm_create_and_get_fd() called with %s and %ld\n", name, size);
 
     if (shm_open(name, O_RDWR, 0644) >= 0)
     {
