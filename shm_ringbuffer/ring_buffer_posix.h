@@ -15,6 +15,10 @@
 #include <sys/shm.h>
 #include <pthread.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct circular_buf_t_aux {
     size_t head;
     size_t tail;
@@ -36,11 +40,13 @@ struct circular_buf_t {
 /// Handle type, the way users interact with the API
 typedef struct circular_buf_t* cbuf_handle_t;
 
-// Shared memory init/free functions. 2 shared memory objects are created: base_name-1 and basename-2.
+// Shared memory init function: 2 shared memory objects are created: base_name-1 and basename-2.
 cbuf_handle_t circular_buf_init_shm(size_t size, char *base_name);
 
+// function to connect to an already created shared memory area
 cbuf_handle_t circular_buf_connect_shm(size_t size, char *base_name);
 
+// free function, to be called only when communication is to be finished
 void circular_buf_free_shm(cbuf_handle_t cbuf, size_t size, char *base_name);
 
 // returns 0 on success, -1 on error (locking version)
@@ -103,3 +109,7 @@ cbuf_handle_t circular_buf_init(uint8_t *buffer, size_t size);
 /// Requires: cbuf is valid and created by circular_buf_init
 /// Does not free data buffer; owner is responsible for that
 void circular_buf_free(cbuf_handle_t cbuf);
+
+#ifdef __cplusplus
+};
+#endif

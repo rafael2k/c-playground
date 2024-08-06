@@ -13,6 +13,10 @@
 #include <sys/shm.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // name should be max 255
 #define MAX_POSIX_SHM_NAME 255
 
@@ -28,3 +32,7 @@ void *shm_map(int fd, size_t size);
 
 // returns 0 on success, -1 on error
 int shm_unmap(void *addr, size_t size);
+
+#ifdef __cplusplus
+};
+#endif
