@@ -48,4 +48,7 @@ int main(int argc, char *argv[])
         }
     }
 
+    circular_buf_free_shm(buffer);
+
+    return 0;
 }

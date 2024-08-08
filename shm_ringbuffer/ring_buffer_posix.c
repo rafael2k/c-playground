@@ -130,13 +130,13 @@ cbuf_handle_t circular_buf_init_shm(size_t size, char *base_name)
     char tmp[MAX_POSIX_SHM_NAME];
     int fd1, fd2;
 
-    cbuf_handle_t cbuf = memalign(SHMLBA, sizeof(struct circular_buf_t));
+    cbuf_handle_t cbuf = (cbuf_handle_t) memalign(SHMLBA, sizeof(struct circular_buf_t));
     assert(cbuf);
 
     strcpy(tmp, base_name);
     strcat(tmp, "-1");
     fd1 = shm_create_and_get_fd(tmp, size);
-    cbuf->buffer = shm_map(fd1, size);
+    cbuf->buffer = (uint8_t *) shm_map(fd1, size);
     close(fd1);
 
     assert(cbuf->buffer);
@@ -145,7 +145,7 @@ cbuf_handle_t circular_buf_init_shm(size_t size, char *base_name)
     strcpy(tmp, base_name);
     strcat(tmp, "-2");
     fd2 = shm_create_and_get_fd(tmp, sizeof(struct circular_buf_t_aux));
-    cbuf->internal = shm_map(fd2, sizeof(struct circular_buf_t_aux));
+    cbuf->internal = (struct circular_buf_t_aux *) shm_map(fd2, sizeof(struct circular_buf_t_aux));
     close(fd2);
 
     assert(cbuf->internal);
@@ -174,7 +174,7 @@ cbuf_handle_t circular_buf_connect_shm(size_t size, char *base_name)
     char tmp[MAX_POSIX_SHM_NAME];
     int fd1, fd2;
 
-    cbuf_handle_t cbuf = memalign(SHMLBA, sizeof(struct circular_buf_t));
+    cbuf_handle_t cbuf = (cbuf_handle_t) memalign(SHMLBA, sizeof(struct circular_buf_t));
     assert(cbuf);
 
     strcpy(tmp, base_name);
@@ -182,7 +182,7 @@ cbuf_handle_t circular_buf_connect_shm(size_t size, char *base_name)
     fd1 = shm_open_and_get_fd(tmp);
     if (fd1 < 0)
         return NULL;
-    cbuf->buffer = shm_map(fd1, size);
+    cbuf->buffer = (uint8_t *) shm_map(fd1, size);
     close(fd1);
 
     assert(cbuf->buffer);
@@ -193,7 +193,7 @@ cbuf_handle_t circular_buf_connect_shm(size_t size, char *base_name)
     fd2 = shm_open_and_get_fd(tmp);
     if (fd2 < 0)
         return NULL;
-    cbuf->internal = shm_map(fd2, sizeof(struct circular_buf_t_aux));
+    cbuf->internal = (struct circular_buf_t_aux *) shm_map(fd2, sizeof(struct circular_buf_t_aux));
     close(fd2);
 
     assert(cbuf->internal);
@@ -203,7 +203,12 @@ cbuf_handle_t circular_buf_connect_shm(size_t size, char *base_name)
     return cbuf;
 }
 
-void circular_buf_free_shm(cbuf_handle_t cbuf, size_t size, char *base_name)
+void circular_buf_free_shm(cbuf_handle_t cbuf)
+{
+    free(cbuf);
+}
+
+void circular_buf_destroy_shm(cbuf_handle_t cbuf, size_t size, char *base_name)
 {
     assert(cbuf && cbuf->internal && cbuf->buffer);
     char tmp[MAX_POSIX_SHM_NAME];
@@ -218,8 +223,6 @@ void circular_buf_free_shm(cbuf_handle_t cbuf, size_t size, char *base_name)
     strcpy(tmp, base_name);
     strcat(tmp, "-2");
     shm_unlink(tmp);
-
-    free(cbuf);
 }
 
 void circular_buf_reset(cbuf_handle_t cbuf)
@@ -470,10 +473,10 @@ cbuf_handle_t circular_buf_init(uint8_t* buffer, size_t size)
 {
     assert(buffer && size);
 
-    cbuf_handle_t cbuf = memalign(SHMLBA, sizeof(struct circular_buf_t));
+    cbuf_handle_t cbuf = (cbuf_handle_t) memalign(SHMLBA, sizeof(struct circular_buf_t));
     assert(cbuf);
 
-    cbuf->internal = memalign(SHMLBA, sizeof(struct circular_buf_t_aux));
+    cbuf->internal = (struct circular_buf_t_aux *) memalign(SHMLBA, sizeof(struct circular_buf_t_aux));
     assert(cbuf->internal);
 
     cbuf->buffer = buffer;

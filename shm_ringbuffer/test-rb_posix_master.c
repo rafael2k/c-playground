@@ -19,7 +19,7 @@
 int main(int argc, char *argv[])
 {
     int size = 10000;
-    int tries = 1000;
+    int tries = 10000;
     uint8_t data[size];
     char uniq_ch[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
@@ -53,5 +53,8 @@ int main(int argc, char *argv[])
         sleep(1);
     }
 
-    circular_buf_free_shm(buffer, buf_size, buffer_name);
+    circular_buf_destroy_shm(buffer, buf_size, buffer_name);
+    circular_buf_free_shm(buffer);
+
+    return 0;
 }
