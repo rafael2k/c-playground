@@ -38,7 +38,7 @@ struct circular_buf_t {
 /// Handle type, the way users interact with the API
 typedef struct circular_buf_t* cbuf_handle_t;
 
-// +++ The next 7 functions should be enough to do everything +++
+// +++ The next 8 functions should be enough to do everything +++
 
 // Shared memory init (create) function: 2 shared memory objects are created: base_name-1 and basename-2.
 cbuf_handle_t circular_buf_init_shm(size_t size, char *base_name);
