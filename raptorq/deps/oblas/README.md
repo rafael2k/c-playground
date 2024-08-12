@@ -11,6 +11,7 @@ The table generator `tablegen.c` also supports [gf4, gf16] but routines to work 
  - NEON: `make CPPFLAGS+="-DOBLAS_NEON"`
  - SSE: `make CPPFLAGS+="-DOBLAS_SSE"`
  - AVX: `make CPPFLAGS+="-DOBLAS_AVX -DOCTMAT_ALIGN=32"`
+ - AVX512: `make CPPFLAGS+="-DOBLAS_AVX -DOCTMAT_ALIGN=64"`
 
 #### Customizing
 Edit `tablegen.c` to change polynomial/field size.
