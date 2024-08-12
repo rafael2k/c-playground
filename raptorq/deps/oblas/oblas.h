@@ -1,35 +1,34 @@
-#ifndef OBLAS_H
-#define OBLAS_H
+#ifndef OCTET_BLAS_H
+#define OCTET_BLAS_H
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
-#define GF_ADD(a, b) ((a) ^ (b))
-#define GF_SUB(a, b) ((a) ^ (b))
-#define GF_MUL(t, a, b)                                                        \
-  ((a == 0 || b == 0) ? 0 : (t##_EXP[t##_LOG[a] + t##_LOG[b]]))
-#define GF_DIV(t, a, b, s) (t##_EXP[t##_LOG[a] - t##_LOG[b] + (s - 1)])
+#include "octmat.h"
+#include "octtables.h"
 
-#define oblas_word uint32_t
+#define OCTET_MUL(u, v) OCT_EXP[OCT_LOG[u] + OCT_LOG[v]]
+#define OCTET_DIV(u, v) OCT_EXP[OCT_LOG[u] - OCT_LOG[v] + 255]
+#define OCTET_SWAP(u, v)                                                       \
+  do {                                                                         \
+    uint8_t __tmp = (u);                                                       \
+    (u) = (v);                                                                 \
+    (v) = __tmp;                                                               \
+  } while (0)
 
-uint32_t bfd_32(uint32_t word, uint8_t at, uint8_t len, uint8_t val);
-uint32_t bfx_32(uint32_t word, uint8_t at, uint8_t len);
+#define ALIGNED_COLS(k)                                                        \
+  (((k) / OCTMAT_ALIGN) + (((k) % OCTMAT_ALIGN) ? 1 : 0)) * OCTMAT_ALIGN
 
-void *oblas_alloc(size_t nmemb, size_t size, size_t align);
+typedef uint8_t octet;
 
-#define oblas_free(p) free(p);
-#define oblas_zero(p, k) memset(p, 0, k);
-#define oblas_copy(p, q, k) memcpy(p, q, k);
-
-void oblas_xor(uint8_t *dst, uint8_t *src, size_t k);
-void oblas_axpy(uint8_t *dst, const uint8_t *src, size_t k, const uint8_t *u_lo,
-                const uint8_t *u_hi);
-void oblas_scal(uint8_t *dst, size_t k, const uint8_t *u_lo,
-                const uint8_t *u_hi);
-void oblas_swap(uint8_t *dst, uint8_t *src, size_t k);
-
-void oblas_axpy_gf2_gf256_32(uint8_t *a, uint32_t *b, size_t k, uint8_t u);
+void ocopy(uint8_t *a, uint8_t *b, size_t i, size_t j, size_t k);
+void oswaprow(uint8_t *a, size_t i, size_t j, size_t k);
+void oswapcol(uint8_t *a, size_t i, size_t j, size_t k, size_t l);
+void oaxpy(uint8_t *a, uint8_t *b, size_t i, size_t j, size_t k, uint8_t u);
+void oaddrow(uint8_t *a, uint8_t *b, size_t i, size_t j, size_t k);
+void oscal(uint8_t *a, size_t i, size_t k, uint8_t u);
+void ozero(uint8_t *restrict a, size_t i, size_t k);
+void ogemm(uint8_t *a, uint8_t *b, uint8_t *c, size_t n, size_t k, size_t m);
+size_t onnz(uint8_t *a, size_t i, size_t s, size_t e, size_t k);
+void oaxpy_b32(uint8_t *a, uint32_t *b, size_t i, size_t k, uint8_t u);
 
 #endif

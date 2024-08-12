@@ -1,24 +1,17 @@
 CFLAGS  = -D_DEFAULT_SOURCE -O3 -g -std=c99 -Wall -march=native 
-CFLAGS += -funroll-loops -ftree-vectorize 
+CFLAGS += -funroll-loops -ftree-vectorize -fno-inline 
 #CFLAGS += -fopt-info-vec
-CFLAGS += -Wno-unused
 
-OBJ=oblas.o gfmat.o oblas.o binmat.o octmat.o
+OBJ=oblas.o util.o octmat.o gf2.o gf4.o gf16.o
 
 all: liboblas.a
 
 tablegen: tablegen.c
 
-gf2_8_tables.h: tablegen
-	./$< 8 > $@
+octtables.h: tablegen
+	./$< > $@
 
-gf2_4_tables.h: tablegen
-	./$< 4 > $@
-
-gf2_2_tables.h: tablegen
-	./$< 2 > $@
-
-oblas.o: oblas.c oblas.h gf2_2_tables.h gf2_4_tables.h gf2_8_tables.h
+oblas.o: oblas.c oblas.h octtables.h
 
 liboblas.a: $(OBJ)
 	$(AR) rcs $@ $^
