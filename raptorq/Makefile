@@ -30,12 +30,9 @@ lib/tuple.o\
 lib/wrkmat.o\
 lib/nanorq.o
 
-all: test libnanorq.a
+all: encode decode benchmark libnanorq.a
 
-test: encode decode
-	$(MAKE) -f example.make
-
-encode: encode.o libnanorq.a 
+encode: encode.o libnanorq.a
 
 decode: decode.o libnanorq.a
 
