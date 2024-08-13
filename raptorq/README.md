@@ -9,6 +9,7 @@ THIS COPY WAS DONE AT 12/08/2024 from official repository at https://github.com/
 - firmware deployment / software updates
 - video streaming
 - large data transfers across high latency links
+- data carousel broadcast
 
 ## Notes
   Default build is configured for AVX, adjust Makefile as needed for other archs
