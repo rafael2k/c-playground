@@ -38,7 +38,7 @@ void write_esi(nanorq *rq, struct ioctx *myio, uint8_t sbn,
     }
     else
     {
-        fprintf(stdout, "tag data size: %lu data size: %lu\n", sizeof(tag), packet_size);
+        fprintf(stdout, "Block written: sbn: %d esi %d tag data size: %lu data size: %lu\n",  sbn, esi, sizeof(tag), packet_size);
         write_buffer(buffer, (uint8_t *)&tag, sizeof(tag));
         write_buffer(buffer, data, packet_size);
     }
@@ -48,13 +48,14 @@ void write_interleaved_block_packets(nanorq *rq, struct ioctx *myio, uint32_t *e
 {
     int num_sbn = nanorq_blocks(rq);
 
-    // for all blocks
+    // for all blocks TODO: shuffle the sbn traversal each call
     for (int sbn = 0; sbn < num_sbn; sbn++)
     {
         int num_esi = nanorq_block_symbols(rq, sbn);
         write_esi(rq, myio, sbn, esi[sbn], buffer);
         esi[sbn]++;
-        printf("Block Written: %d esi %u %d\n", sbn, esi[sbn], num_esi);
+        if (esi[sbn] > ((1 << 24) - 1))
+            esi[sbn] = 0;
     }
 }
 
