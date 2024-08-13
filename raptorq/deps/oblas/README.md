@@ -1,6 +1,6 @@
 # oblas
 
-This is commit https://github.com/sleepybishop/oblas/commit/63196b91b1d9d9e5f125ddf03a204c33b5a5eb72
+This is commit https://github.com/sleepybishop/oblas/commit/63196b91b1d9d9e5f125ddf03a204c33b5a5eb72 plus AXV512 backport.
 
 blas-like routines to solve systems in finite fields [gf2, gf256]
 
