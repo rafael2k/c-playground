@@ -119,13 +119,14 @@ int main(int argc, char *argv[])
         bool file_received = true;
         for (int i = 0; i < num_sbn; i++)
         {
-            if (block_decoded[sbn] == false)
+            if (block_decoded[i] == false)
                 file_received = false;
         }
 
         if (file_received == true)
+        {
             goto success;
-
+        }
         have_more_symbols = false;
     }
 
