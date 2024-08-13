@@ -30,7 +30,11 @@ lib/tuple.o\
 lib/wrkmat.o\
 lib/nanorq.o
 
-all: encode decode benchmark libnanorq.a
+all: fountain dream encode decode benchmark libnanorq.a
+
+dream: dream.o libnanorq.a ../shm_ringbuffer/shm_posix.o ../shm_ringbuffer/ring_buffer_posix.o
+
+fountain: fountain.o libnanorq.a ../shm_ringbuffer/shm_posix.o ../shm_ringbuffer/ring_buffer_posix.o
 
 encode: encode.o libnanorq.a
 
@@ -50,4 +54,4 @@ libnanorq.a: $(OBJ) deps/oblas/liboblas.a
 	$(AR) rcs $@ $(OBJ) deps/oblas/*.o
 
 clean: oblas_clean
-	$(RM) encode decode lib/*.o *.o *.a *.gcda *.gcno *.gcov callgrind.* *.gperf *.prof *.heap perf.data perf.data.old
+	$(RM) fountain dream encode decode lib/*.o ../shm_ringbuffer/shm_posix.o ../shm_ringbuffer/ring_buffer_posix.o *.o *.a *.gcda *.gcno *.gcov callgrind.* *.gperf *.prof *.heap perf.data perf.data.old
