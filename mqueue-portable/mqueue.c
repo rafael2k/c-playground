@@ -87,7 +87,7 @@ int COND_TIMED_WAIT(struct mq_hdr* hdr, const struct timespec* abstime)
 	dwWaitResult = WaitForSingleObject(hdr->mqh_wait, (DWORD) abstime->tv_sec);
 	switch(dwWaitResult) {
 	    case WAIT_OBJECT_0:
-	        break
+	        break;
 	    case WAIT_TIMEOUT:
 	        return ETIMEDOUT;
 	    default:
@@ -309,11 +309,10 @@ mqd_t mq_open(const char *pathname1, int oflag, ...)
     mqinfo = NULL;
 
 #if defined(WIN32) || defined(__APPLE__)
-	{
-		if(!get_temp_path(pathBuffer, sizeof(pathBuffer), pathname1)) {
-			return((mqd_t) -1);
-		}
-	}
+    if(!get_temp_path(pathBuffer, sizeof(pathBuffer), pathname1))
+    {
+        return((mqd_t) -1);
+    }
 #else
 	pathBuffer = (char*)pathname1;
 #endif
@@ -333,25 +332,25 @@ again:
                 goto exists;            /* already exists, OK */
             else
                 return((mqd_t) -1);
-            }
-            created = 1;
+        }
+        created = 1;
                         /* first one to create the file initializes it */
-            if (attr == NULL)
-                attr = &defattr;
-            else {
-                if (attr->mq_maxmsg <= 0 || attr->mq_msgsize <= 0) {
-                    errno = EINVAL;
-                    goto err;
-                }
+        if (attr == NULL)
+            attr = &defattr;
+        else {
+            if (attr->mq_maxmsg <= 0 || attr->mq_msgsize <= 0) {
+                errno = EINVAL;
+                goto err;
             }
-            /* calculate and set the file size */
-            msgsize = MSGSIZE(attr->mq_msgsize);
-            filesize = sizeof(struct mq_hdr) + (attr->mq_maxmsg *
-                               (sizeof(struct msg_hdr) + msgsize));
-            if (lseek(fd, filesize - 1, SEEK_SET) == -1)
+        }
+        /* calculate and set the file size */
+        msgsize = MSGSIZE(attr->mq_msgsize);
+        filesize = sizeof(struct mq_hdr) + (attr->mq_maxmsg *
+                                            (sizeof(struct msg_hdr) + msgsize));
+        if (lseek(fd, filesize - 1, SEEK_SET) == -1)
                 goto err;
-            if (write(fd, "", 1) == -1)
-                goto err;
+        if (write(fd, "", 1) == -1)
+            goto err;
 
             /* memory map the file */
 #if defined(WIN32)
