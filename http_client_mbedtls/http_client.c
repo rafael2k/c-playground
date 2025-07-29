@@ -16,43 +16,52 @@
 #include "mbedtls/error.h"
 
 
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE 16384
 
-// Resolve host to IP address (use IP directly if provided)
-int get_ip_address(const char* host, char* ip_out, size_t ip_out_size) {
+
+// Very basic check for valid IPv4 dotted quad
+int is_valid_ipv4(const char *ip) {
     struct in_addr addr;
-    if (inet_pton(AF_INET, host, &addr) == 1) {
-        strncpy(ip_out, host, ip_out_size);
-        ip_out[ip_out_size - 1] = '\0';
-        return 0;
-    }
-
-    struct hostent* he = gethostbyname(host);
-    if (!he || he->h_addrtype != AF_INET || !he->h_addr_list[0]) {
-        return -1;
-    }
-
-    addr = *(struct in_addr*)he->h_addr_list[0];
-    if (!inet_ntop(AF_INET, &addr, ip_out, ip_out_size)) {
-        return -1;
-    }
-
-    return 0;
+    return inet_pton(AF_INET, ip, &addr) == 1;
 }
 
-int https_get(const char* host, const char* ip, int port, const char* path, const char* bearer_token, int use_tls) {
-    int ret = 1;
-    int sockfd = -1;
-    char port_str[6];
-    snprintf(port_str, sizeof(port_str), "%d", port);
+int connect_tcp(const char* ip, int port) {
+    int sockfd;
+    struct sockaddr_in server;
 
-    mbedtls_net_context net_ctx;
+    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        perror("socket()");
+        return -1;
+    }
+
+    memset(&server, 0, sizeof(server));
+    server.sin_family = AF_INET;
+    server.sin_port = htons(port);
+    if (inet_pton(AF_INET, ip, &server.sin_addr) <= 0) {
+        perror("inet_pton()");
+        close(sockfd);
+        return -1;
+    }
+
+    if (connect(sockfd, (struct sockaddr*)&server, sizeof(server)) < 0) {
+        perror("connect()");
+        close(sockfd);
+        return -1;
+    }
+
+    return sockfd;
+}
+
+int https_get(const char* ip, int port, const char* host, const char* path, const char* bearer_token, int use_tls) {
+    int ret = 1;
+    int sockfd = connect_tcp(ip, port);
+    if (sockfd < 0) return 1;
+
     mbedtls_ssl_context ssl;
     mbedtls_ssl_config conf;
     mbedtls_ctr_drbg_context ctr_drbg;
     mbedtls_entropy_context entropy;
 
-    mbedtls_net_init(&net_ctx);
     mbedtls_ssl_init(&ssl);
     mbedtls_ssl_config_init(&conf);
     mbedtls_ctr_drbg_init(&ctr_drbg);
@@ -60,12 +69,7 @@ int https_get(const char* host, const char* ip, int port, const char* path, cons
 
     if ((ret = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy,
                                      NULL, 0)) != 0) {
-        fprintf(stderr, "Failed to seed RNG: -0x%04x\n", -ret);
-        goto cleanup;
-    }
-
-    if ((ret = mbedtls_net_connect(&net_ctx, ip, port_str, MBEDTLS_NET_PROTO_TCP)) != 0) {
-        fprintf(stderr, "Connection failed: -0x%04x\n", -ret);
+        fprintf(stderr, "RNG seed failed: -0x%04x\n", -ret);
         goto cleanup;
     }
 
@@ -86,8 +90,8 @@ int https_get(const char* host, const char* ip, int port, const char* path, cons
             goto cleanup;
         }
 
-        mbedtls_ssl_set_hostname(&ssl, host);
-        mbedtls_ssl_set_bio(&ssl, &net_ctx, mbedtls_net_send, mbedtls_net_recv, NULL);
+        mbedtls_ssl_set_hostname(&ssl, host);  // Needed for SNI
+        mbedtls_ssl_set_bio(&ssl, &sockfd, mbedtls_net_send, mbedtls_net_recv, NULL);
 
         if ((ret = mbedtls_ssl_handshake(&ssl)) != 0) {
             fprintf(stderr, "SSL handshake failed: -0x%04x\n", -ret);
@@ -95,8 +99,7 @@ int https_get(const char* host, const char* ip, int port, const char* path, cons
         }
     }
 
-    // Compose GET request
-    char request[1024];
+    char request[BUFFER_SIZE];
     snprintf(request, sizeof(request),
              "GET %s HTTP/1.1\r\n"
              "Host: %s\r\n"
@@ -107,19 +110,18 @@ int https_get(const char* host, const char* ip, int port, const char* path, cons
 
     ssize_t sent = use_tls
         ? mbedtls_ssl_write(&ssl, (const unsigned char*)request, strlen(request))
-        : write(net_ctx.fd, request, strlen(request));
+        : write(sockfd, request, strlen(request));
 
     if (sent < 0) {
-        fprintf(stderr, "Failed to send request: -0x%04x\n", -(int)sent);
+        fprintf(stderr, "Request send failed: -0x%04x\n", -(int)sent);
         goto cleanup;
     }
 
-    // Read and print response
     char buffer[BUFFER_SIZE];
     int n;
     while ((n = use_tls
                 ? mbedtls_ssl_read(&ssl, (unsigned char*)buffer, sizeof(buffer) - 1)
-                : read(net_ctx.fd, buffer, sizeof(buffer) - 1)) > 0) {
+                : read(sockfd, buffer, sizeof(buffer) - 1)) > 0) {
         buffer[n] = '\0';
         fputs(buffer, stdout);
     }
@@ -132,29 +134,33 @@ cleanup:
         mbedtls_ssl_free(&ssl);
         mbedtls_ssl_config_free(&conf);
     }
+
     mbedtls_ctr_drbg_free(&ctr_drbg);
     mbedtls_entropy_free(&entropy);
-    mbedtls_net_free(&net_ctx);
+    close(sockfd);
     return ret;
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 5) {
-        fprintf(stderr, "Usage: %s <http|https> <host> <path> <bearer_token>\n", argv[0]);
+    if (argc != 6) {
+        fprintf(stderr, "Usage: %s <http|https> <ip> <port> <path> <bearer_token>\n", argv[0]);
         return 1;
     }
 
     int use_tls = strcmp(argv[1], "https") == 0;
-    const char* host = argv[2];
-    const char* path = argv[3];
-    const char* token = argv[4];
-    int port = use_tls ? 443 : 80;
+    const char* ip = argv[2];
+    const char* port_str = argv[3];
+    const char* path = argv[4];
+    const char* token = argv[5];
+    int port = atoi(port_str);
 
-    char ip[INET_ADDRSTRLEN];
-    if (get_ip_address(host, ip, sizeof(ip)) < 0) {
-        fprintf(stderr, "Failed to resolve IP for host: %s\n", host);
+    if (!is_valid_ipv4(ip)) {
+        fprintf(stderr, "Invalid IP address format: %s\n", ip);
         return 1;
     }
 
-    return https_get(host, ip, port, path, token, use_tls);
+    // Use IP for socket connect, but still send correct Host header for TLS SNI and HTTP
+    const char* fake_host = "example.com";  // Replace with correct host if needed
+
+    return https_get(ip, port, fake_host, path, token, use_tls);
 }
